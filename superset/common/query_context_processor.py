@@ -353,6 +353,15 @@ class QueryContextProcessor:
 
     def get_data(self, df: pd.DataFrame) -> Union[str, List[Dict[str, Any]]]:
         if self._query_context.result_format == ChartDataResultFormat.CSV:
+            if (app.config["CHARTS_FOR_PIVOTED_CSV_EXPORT"]):
+                tables = app.config["CHARTS_FOR_PIVOTED_CSV_EXPORT"]
+                if tables != None and len(tables) != 0:
+                        form_data = self._query_context.form_data
+                        # only apply post processing por pivot table
+                        if form_data != None:
+                            viz_type = form_data.get("viz_type", "empty")
+                            if "pivot_table" in viz_type and self._qc_datasource.table_name in tables:
+                                self._query_context.result_type = "post_processed"
             include_index = not isinstance(df.index, pd.RangeIndex)
             columns = list(df.columns)
             verbose_map = self._qc_datasource.data.get("verbose_map", {})
