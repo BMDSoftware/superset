@@ -38,13 +38,14 @@ export type UiConfigType = {
   hideTab?: boolean
   hideChartControls?: boolean
   filters?: {
-    [key: string]: boolean | undefined
+    [key: string]: boolean | string | undefined;
     visible?: boolean
     expanded?: boolean
   }
   urlParams?: {
     [key: string]: any
   }
+  native?: string;
 }
 
 export type EmbedDashboardParams = {
