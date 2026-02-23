@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 from flask_babel import gettext as __
 
+from superset import is_feature_enabled
 from superset.common.chart_data import ChartDataResultFormat
 from superset.extensions import event_logger
 from superset.utils.core import (
@@ -351,12 +352,16 @@ def apply_client_processing(  # noqa: C901
             )
             for column in processed_df.columns
         ]
-        processed_df.index = [
-            (
-                " ".join(str(name) for name in index).strip()
-                if isinstance(index, tuple)
-                else index
-            )
+
+        index_names = processed_df.index.names
+
+        if is_feature_enabled("FLATTEN_INDEX_ON_CSV_EXPORT"):
+            processed_df.index = [index for index in processed_df.index if index != None]
+        else:
+            processed_df.index = [
+            " ".join(str(name) for name in index).strip()
+            if isinstance(index, tuple)
+            else index
             for index in processed_df.index
         ]
 
@@ -364,8 +369,21 @@ def apply_client_processing(  # noqa: C901
             query["data"] = processed_df.to_dict()
         elif query["result_format"] == ChartDataResultFormat.CSV:
             buf = StringIO()
-            processed_df.to_csv(buf)
+            # Add the capability of adding the index as also column names to be exported in csv
+            # create the respective columns from this index, mainly by processing its tuple
+            if len(processed_df.index != 0) and is_feature_enabled("FLATTEN_INDEX_ON_CSV_EXPORT"):
+                processed_df = processed_df.reset_index() # flatten index (creates a column in the form of (index1, index2)
+                for i in range(len(index_names)):
+                    single_index_name = index_names[i]
+                    processed_df.insert(i, single_index_name, processed_df["index"].apply(extract_tuple, index_idx=i))
+                processed_df.drop(['index'], axis=1, inplace=True)
+                processed_df.to_csv(buf, index=False)
+            else:
+                processed_df.to_csv(buf)
             buf.seek(0)
             query["data"] = buf.getvalue()
 
     return result
+
+def extract_tuple(tuple, index_idx):
+    return tuple[index_idx]
