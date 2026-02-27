@@ -555,9 +555,6 @@ const Select = forwardRef(
     const getPastedTextValue = useCallback(
       (text: string) => {
         const option = getOption(text, fullSelectOptions, true);
-        if (!option && !allowNewOptions) {
-          return undefined;
-        }
         if (labelInValue) {
           const value: AntdLabeledValue = {
             label: text,
@@ -571,7 +568,7 @@ const Select = forwardRef(
         }
         return option ? (isObject(option) ? option.value! : option) : text;
       },
-      [allowNewOptions, fullSelectOptions, labelInValue],
+      [fullSelectOptions, labelInValue],
     );
 
     const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
